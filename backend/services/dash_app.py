@@ -152,16 +152,19 @@ def build_figure(widget, payload):
     else:
         x_field = dims[0] if dims else None
         x = [r.get(x_field) for r in records] if x_field else list(range(len(records)))
+        texts = [str(v) for v in x if v is not None]
+        categorical = bool(texts) and all(not str(v)[:1].isdigit() for v in texts)
+        horizontal = (wtype == "hbar") or (wtype == "bar" and categorical and 1 < len(texts) <= 24)
         secondary = set(widget.get("secondary") or [])
         for i, alias in enumerate(meas):
             raw = alias.split("__")[0]
             y = [r.get(alias) for r in records]
             name = labels.get(alias) or _axis_title(raw)
             axis = "y2" if (wtype == "combo" and (raw in secondary or i == len(meas) - 1 and len(meas) > 1)) else "y"
-            if wtype == "bar":
-                fig.add_trace(go.Bar(x=x, y=y, name=name, marker_color=COLORS[i % len(COLORS)]))
-            elif wtype == "hbar":
+            if horizontal and wtype in ("bar", "hbar"):
                 fig.add_trace(go.Bar(x=y, y=x, name=name, orientation="h", marker_color=COLORS[i % len(COLORS)]))
+            elif wtype == "bar":
+                fig.add_trace(go.Bar(x=x, y=y, name=name, marker_color=COLORS[i % len(COLORS)]))
             elif wtype == "area":
                 fig.add_trace(go.Scatter(x=x, y=y, name=name, fill="tozeroy", mode="lines",
                                          line=dict(color=COLORS[i % len(COLORS)], width=2)))
@@ -173,9 +176,11 @@ def build_figure(widget, payload):
                     line=dict(color=COLORS[i % len(COLORS)], width=2.2),
                     yaxis=axis,
                 ))
-        if wtype == "hbar":
-            layout["xaxis"] = dict(title="")
-            layout["yaxis"] = dict(title=_label(x_field) if x_field else "")
+        if horizontal:
+            layout["xaxis"] = dict(title="", automargin=True, gridcolor="#e2e8f0", zeroline=False)
+            layout["yaxis"] = dict(title="", automargin=True, autorange="reversed")
+            layout["margin"] = dict(l=8, r=24, t=36, b=28)
+            layout["barmode"] = "group"
         else:
             layout["xaxis"] = dict(title=_label(x_field) if x_field else "")
             layout["yaxis"] = dict(title="", gridcolor="#e2e8f0", zeroline=False)
