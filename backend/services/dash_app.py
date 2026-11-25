@@ -53,7 +53,7 @@ def _kpi_card(title, value, unit, color):
     if value is not None:
         try:
             num = float(value)
-            text = f"{num:,.2f}" if abs(num) < 1000 else f"{num:,.1f}"
+            text = f"{num:,.2f}" if abs(num) < 1000 else f"{num:,.0f}"
         except (TypeError, ValueError):
             text = str(value)
     return html.Div([
@@ -200,7 +200,7 @@ INDEX_CSS = """
 .kpi-card { height:100%; padding:16px 18px; border-top:3px solid #1d6fd8; }
 .kpi-label { color:#64748b; font-size:12px; font-weight:600; }
 .kpi-row { display:flex; align-items:baseline; gap:8px; margin-top:10px; }
-.kpi-value { font-size:28px; font-weight:700; letter-spacing:-0.03em; }
+.kpi-value { font-size:22px; font-weight:700; letter-spacing:-0.03em; line-height:1.2; }
 .kpi-unit { color:#64748b; font-size:12px; }
 .dash-empty { padding:48px; text-align:center; color:#64748b; }
 .refresh-tip { color:#64748b; font-size:12px; }
@@ -220,7 +220,7 @@ def attach_dash(flask_app):
         server=flask_app,
         url_base_pathname=DASH_PREFIX,
         suppress_callback_exceptions=True,
-        title="InsightForge BI",
+        title="Duck Insight BI",
     )
     dash_app.index_string = """<!DOCTYPE html>
 <html>
@@ -259,6 +259,7 @@ def attach_dash(flask_app):
         Output("board-title", "children"),
         Output("board-desc", "children"),
         Output("flt-site", "options"),
+        Output("flt-site", "style"),
         Output("board-meta", "data"),
         Input("url", "pathname"),
         Input("url", "search"),
@@ -270,14 +271,16 @@ def attach_dash(flask_app):
         bid = _parse_bid(pathname, search)
         token = _token_from(search, request)
         user = _user_by_token(token) or current_user()
-        empty_opts = [{"label": "全部站点", "value": ""}]
+        empty_opts = [{"label": "全部", "value": ""}]
+        hidden = {"display": "none"}
+        shown = {"width": "180px"}
         if not user:
-            return "未登录", "请从 InsightForge 登录后打开看板。", empty_opts, None
+            return "未登录", "请从 Duck Insight 登录后打开看板。", empty_opts, hidden, None
         if not bid:
-            return "BI 看板", "未指定看板。", empty_opts, None
+            return "BI 看板", "未指定看板。", empty_opts, hidden, None
         board = bi_service.get_board(bid)
         if not board:
-            return "看板不存在", "看板不存在或已删除。", empty_opts, None
+            return "看板不存在", "看板不存在或已删除。", empty_opts, hidden, None
         layout = board.get("layout") or {}
         info = None
         src = layout.get("default_source") or {}
@@ -300,7 +303,8 @@ def attach_dash(flask_app):
         desc = board.get("description") or "Plotly Dash · 自助分析看板"
         if meta["realtime"]:
             desc = f"{desc} · 实时读取，每 60 秒自动刷新"
-        return board.get("name") or "BI 看板", desc, site_opts, meta
+        site_style = shown if len(site_opts) > 1 else hidden
+        return board.get("name") or "BI 看板", desc, site_opts, site_style, meta
 
     @dash_app.callback(
         Output("grid", "children"),
@@ -314,7 +318,7 @@ def attach_dash(flask_app):
         from services import bi_service
 
         if not meta or not meta.get("id"):
-            return html.Div("请从 InsightForge 登录后打开看板。", className="dash-empty")
+            return html.Div("请从 Duck Insight 登录后打开看板。", className="dash-empty")
         filters = []
         if site:
             filters.append({"field": "site_name", "type": "select", "value": [site]})

@@ -3,7 +3,7 @@
     <header class="bar">
       <div>
         <strong>{{ board.name || 'BI 看板' }}</strong>
-        <span>Plotly Dash 交互预览 · 可筛选站点与时间粒度</span>
+        <span>Plotly Dash 交互预览</span>
       </div>
       <div class="ops">
         <el-button @click="$router.push('/bi')">返回列表</el-button>
