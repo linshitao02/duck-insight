@@ -194,10 +194,16 @@ def build_figure(widget, payload):
                     if isinstance(val, (int, float)) and val > xmax:
                         xmax = val
             step = _nice_step(xmax / 2) if xmax else None
+            if step:
+                import math
+                last = math.ceil(xmax / step) * step
+                axis_range = [0, last * 1.08]
+            else:
+                axis_range = None
             layout["xaxis"] = dict(
                 title="", automargin=True, gridcolor="#e2e8f0", zeroline=False,
                 tickangle=0, tick0=0, dtick=step, tickformat=".2s",
-                range=[0, xmax * 1.08] if xmax else None,
+                range=axis_range,
             )
             layout["yaxis"] = dict(title="", automargin=True, autorange="reversed")
             layout["margin"] = dict(l=8, r=16, t=36, b=36)
