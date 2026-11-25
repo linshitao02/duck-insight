@@ -613,6 +613,18 @@ _RAW_PRICE_SYSTEM = (
     "【预测切片】\n{predictions}\n\n【知识库召回片段】\n{context}"
 )
 DEFAULT_PRICE_SYSTEM = _with_numeric_guard(_RAW_PRICE_SYSTEM)
+_RAW_GENERIC_DAG_SYSTEM = (
+    "你是数据分析助手。只输出最终中文正文，禁止思考提纲。"
+    "数字必须来自下方【评估指标】和【特征重要性】，禁止编造，也不要套用材料里没有的行业。\n"
+    "按 4 节写，每节 3–6 句：\n"
+    "1. 本轮流程做了什么（数据、目标列、算法）\n"
+    "2. 模型表现（误差、拟合）\n"
+    "3. 特征可能对应的业务含义（须写需人工确认）\n"
+    "4. 数据质量和后续注意点\n\n"
+    "【评估指标】\n{metrics}\n\n【特征重要性】\n{importance}\n\n"
+    "【预测切片】\n{predictions}\n\n【知识库召回片段】\n{context}"
+)
+DEFAULT_GENERIC_DAG_SYSTEM = _with_numeric_guard(_RAW_GENERIC_DAG_SYSTEM)
 DEFAULT_RISK_QUESTION = "根据本次模型预测结果，结合市场规则给出风险预警与报价注意点。"
 _RAW_RISK_SYSTEM = (
     "你是电力交易风险分析岗。只输出最终中文正文，禁止思考提纲。"
@@ -686,7 +698,7 @@ def _fallback_train_report(facts, jobs, importance_text, answer):
         "> 离线作业。数字来自本轮训练指标，调度/交易建议需人工确认，系统未下单。",
         "",
         "## 1. 本轮训练",
-        f"目标列 {col or '-'}（{label}），经气象-负荷-风光逻辑数据集清洗后训练，再由大模型解读指标与特征重要性。",
+        f"目标列 {col or '-'}（{label}），经上游清洗后训练，再由大模型解读指标与特征重要性。",
         "",
         importance_text or "（无特征重要性）",
     ]
@@ -702,7 +714,7 @@ def _fallback_train_report(facts, jobs, importance_text, answer):
         "renewable_mw": "风光合计高发时残余负荷下降、电价承压；关注消纳与反调峰。",
         "load_mw": "气温与热浪/寒潮驱动负荷，晚高峰与空调负荷是关键窗口。",
         "price_da": "负荷抬升、风光下降时残余负荷增加，日前价格趋势向上；高峰时段应重点看带宽。",
-    }.get(col, "结合气象特征解读本轮拟合质量。")
+    }.get(col, "结合进入模型的特征解读本轮拟合质量，不要补充材料里没有的行业背景。")
     lines += [
         "",
         f"## 2. {label}要点",
@@ -848,9 +860,11 @@ def _llm_from_dag_ctx(ctx, cfg=None):
     preview = ctx.get("predict_preview") or []
     importance_text = _format_importance(jobs)
     try:
+        scene = str(cfg.get("scenario_code") or ctx.get("scenario_code") or "").lower()
+        default_system = DEFAULT_PRICE_SYSTEM if any(key in scene for key in ("power", "weather", "electric")) else DEFAULT_GENERIC_DAG_SYSTEM
         answer, snippets, question, _ = _dag_llm_generate(
             ctx, cfg, _target_label((_primary_job(jobs) or {}).get("target_col")),
-            DEFAULT_PRICE_SYSTEM,
+            default_system,
             {
                 "metrics": dumps(facts),
                 "importance": importance_text,
@@ -1118,7 +1132,7 @@ def _run_node(node, ctx):
                 steps = clean_service.ordered_steps(rule.get("steps") or [], rule.get("edges"))
         job = model_service.create_and_run({
             "name": cfg.get("name") or f"DAG训练-{target_col}",
-            "scenario_code": cfg.get("scenario_code") or ctx.get("scenario_code") or "power_trading",
+            "scenario_code": cfg.get("scenario_code") or ctx.get("scenario_code") or "generic",
             "target_type": target_type,
             "target_id": int(target_id),
             "binding_id": binding_id,

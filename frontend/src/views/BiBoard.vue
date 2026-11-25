@@ -70,7 +70,7 @@
     <el-dialog v-model="create.visible" title="新建看板" width="560px" destroy-on-close>
       <el-form label-width="96px">
         <el-form-item label="名称" required>
-          <el-input v-model="create.name" placeholder="例如：气象-负荷-出力-电价监测看板" maxlength="64" show-word-limit />
+          <el-input v-model="create.name" placeholder="例如：电商销售监测看板" maxlength="64" show-word-limit />
         </el-form-item>
         <el-form-item label="模板">
           <el-select v-model="create.template" style="width: 100%">

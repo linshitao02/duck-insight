@@ -134,7 +134,7 @@
       <div ref="scrollRef" class="cw-msgs">
         <div v-if="!messages.length && !streaming" class="cw-welcome">
           <div class="cw-hi">你好，我是智析助手</div>
-          <p>可以问我负荷与电价预测、气象特征影响、模型指标解读、报价策略等问题。未命中知识库时会直接依据大模型回答。</p>
+          <p>可以问我数据集字段、清洗结果、模型指标和看板里的波动。未命中知识库时会直接依据大模型回答。</p>
           <div class="cw-chips">
             <button v-for="q in presets" :key="q" @click="send(q)">{{ q }}</button>
           </div>
@@ -245,9 +245,9 @@ const promptId = ref(null)
 const useRag = ref(true)
 
 const presets = [
-  '用电负荷预测主要受哪些气象特征影响？',
-  '日前电价的误差形态说明什么？',
-  '极端天气下的报价要注意什么？'
+  '这次训练里哪个特征对结果影响最大？',
+  '清洗之后还应该留意哪些字段？',
+  '看板上的波动应该先从哪一列查起？'
 ]
 
 let controller = null
@@ -257,7 +257,7 @@ let renderTimer = null
 const renderedStream = computed(() => marked.parse(streamText.value || ''))
 const headSub = computed(() => {
   const n = current.value ? current.value.message_count || 0 : 0
-  return n ? `已 ${n} 条消息 · 短期记忆最近 4 轮` : '气象 · 电力 · 数据分析'
+  return n ? `已 ${n} 条消息 · 短期记忆最近 4 轮` : '数据接入 · 训练 · 洞察'
 })
 
 const promptGroups = computed(() => {

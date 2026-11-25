@@ -2,10 +2,10 @@
   <el-container class="shell">
     <el-aside v-if="!flush" width="240px" class="aside">
       <div class="brand">
-        <div class="logo">IF</div>
+        <img class="logo" src="/duck.png?v=insight" alt="Duck Insight" />
         <div>
-          <strong>InsightForge</strong>
-          <em>气象电力数据分析平台</em>
+          <strong>Duck Insight</strong>
+          <em>数据分析工作台</em>
         </div>
       </div>
       <el-menu
@@ -114,7 +114,6 @@ const onCmd = (cmd) => {
 }
 
 onMounted(async () => {
-  userStore.setScenario('power_trading')
   const res = await getScenarios()
   userStore.setScenarios(res.data || [])
 })
@@ -142,13 +141,8 @@ onMounted(async () => {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: linear-gradient(145deg, #1d6fd8 0%, #0f766e 100%);
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  color: #fff;
-  font-size: 14px;
-  letter-spacing: -0.04em;
+  object-fit: cover;
+  flex: none;
 }
 
 .brand strong {

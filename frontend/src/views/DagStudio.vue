@@ -647,7 +647,7 @@ const mysqlPicker = reactive({
 const graphId = ref(null)
 const graphName = ref('未命名编排')
 const graphDesc = ref('')
-const scenario = ref('power_trading')
+const scenario = ref('ecommerce')
 const scenarios = ref([])
 const scheduleKind = ref('none')
 const scheduleEnabled = ref(false)
@@ -1578,7 +1578,7 @@ function applyGraph(row) {
   graphId.value = row.id
   graphName.value = row.name
   graphDesc.value = row.description || ''
-  scenario.value = row.scenario_code || 'power_trading'
+  scenario.value = row.scenario_code || 'ecommerce'
   scheduleKind.value = row.schedule_kind || 'none'
   scheduleEnabled.value = !!row.schedule_enabled
   const g = row.graph || {}
@@ -1590,7 +1590,7 @@ function resetBlank() {
   graphId.value = null
   graphName.value = '未命名编排'
   graphDesc.value = ''
-  scenario.value = 'power_trading'
+  scenario.value = 'ecommerce'
   scheduleKind.value = 'none'
   scheduleEnabled.value = false
   nodes.value = []

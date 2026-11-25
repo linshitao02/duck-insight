@@ -113,6 +113,7 @@ const onPager = ({ page: p, pageSize: s }) => {
 
 const sceneName = (code) => ({
   store_sales: '商店销售',
+  ecommerce: '电商分析',
   power_trading: '电力交易',
   generic: '通用'
 }[code] || code || '')

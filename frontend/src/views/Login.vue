@@ -176,7 +176,7 @@ const moduleGroups = [
     items: [
       { name: '工作台', icon: 'DataBoard', desc: '全局指标与分析链路', color: '#e08a3c' },
       { name: 'BI 看板', icon: 'DataAnalysis', desc: '自助拖拽可视化', color: '#14b8a6' },
-      { name: '电力决策舱', icon: 'Lightning', desc: '专题场景监测', color: '#f59e0b' },
+      { name: '洞察报告', icon: 'Notebook', desc: '把训练结果写成可读结论', color: '#f59e0b' },
       { name: 'DAG 编排', icon: 'Share', desc: '流程编排可回放', color: '#38bdf8' }
     ]
   },

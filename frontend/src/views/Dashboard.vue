@@ -1,30 +1,20 @@
 <template>
   <div class="dash">
-    <!-- 气象 · 电力 主题顶部 -->
     <section class="hero">
-      <div class="hero-bg" />
       <div class="hero-grid" />
       <div class="hero-glow g1" />
       <div class="hero-glow g2" />
       <div class="hero-inner">
         <div class="hero-copy">
           <div class="chip">
-            <span class="pulse" />{{ scenarioName }} · 分析流水线
+            <img src="/duck.png?v=insight" alt="" />
+            Duck Insight · 分析工作台
           </div>
-          <h1>{{ isPower ? '把气象信号变成可确认的交易决策' : '把数据变成可行动的销量决策' }}</h1>
-          <p v-if="isPower">
-            多源气象治理 → 负荷 / 风光出力预测 → 电价研判 → 风险预警 → DAG 复盘。报价仅作建议，执行仍由交易员确认。
-          </p>
-          <p v-else>上传 → 智能编织 → 清洗绑定 → 训练评估 → 预测解读。当前场景可随时扩展为库存、客流等新分析域。</p>
+          <h1>把一张表，洗成能回头看的洞察</h1>
+          <p>接入数据，配好清洗规则，训练模型，再排成 DAG。指标留在看板上，结论写成可以复核的报告。</p>
           <div class="hero-btns">
-            <template v-if="isPower">
-              <el-button type="primary" @click="$router.push('/power')">进入电力决策舱</el-button>
-              <el-button class="ghost" @click="$router.push('/dag')">打开 DAG 编排</el-button>
-            </template>
-            <template v-else>
-              <el-button type="primary" @click="$router.push('/dataset')">导入数据</el-button>
-              <el-button class="ghost" @click="$router.push('/train')">开始训练</el-button>
-            </template>
+            <el-button type="primary" @click="$router.push('/dataset')">导入数据</el-button>
+            <el-button class="ghost" @click="$router.push('/bi')">打开 BI 看板</el-button>
           </div>
         </div>
 
@@ -41,7 +31,7 @@
     <el-card shadow="never" class="block">
       <template #header>
         <div class="card-head">
-          <span>{{ isPower ? '气象 → 电力 决策链路' : '能力链路' }}</span>
+          <span>数据分析链路</span>
           <span class="hint">点击进入对应模块</span>
         </div>
       </template>
@@ -97,17 +87,10 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import * as echarts from 'echarts'
 import { getOverview } from '@/api'
-import { getScenarios as fetchScenes } from '@/api/user'
-import { useUserStore } from '@/stores/user'
 
-const userStore = useUserStore()
 const overview = reactive({ stats: {}, recent_jobs: [], trend: [] })
 const chartRef = ref()
-const scenes = ref([])
 let chart = null
-
-const scenarioName = computed(() => scenes.value.find(s => s.code === userStore.scenario)?.name || '电力交易分析')
-const isPower = computed(() => true)
 
 const kpis = computed(() => ([
   { label: '数据集', value: overview.stats.datasets || 0, unit: '个', color: '#0ea5e9' },
@@ -116,19 +99,12 @@ const kpis = computed(() => ([
   { label: '预测记录', value: overview.stats.predicts || 0, unit: '条', color: '#a78bfa' },
 ]))
 
-const retailSteps = [
-  { title: '数据编织', desc: '多表智能关联', path: '/dataset', icon: 'Connection', color: '#0ea5e9' },
-  { title: '清洗绑定', desc: '规则可复用', path: '/clean', icon: 'SetUp', color: '#14b8a6' },
-  { title: '小模型训练', desc: '14 种算法', path: '/train', icon: 'Cpu', color: '#f59e0b' },
-  { title: '预测解读', desc: '表单/Excel + LLM', path: '/predict', icon: 'Promotion', color: '#a78bfa' },
+const steps = [
+  { title: '数据接入', desc: '上传表格并看字段画像', path: '/dataset', icon: 'FolderOpened', color: '#e08a3c' },
+  { title: '清洗规则', desc: '去重、日期和类别编码', path: '/clean', icon: 'SetUp', color: '#14b8a6' },
+  { title: '模型训练', desc: '回归、分类和指标对比', path: '/train', icon: 'Cpu', color: '#38bdf8' },
+  { title: 'DAG 编排', desc: '把清洗和训练串成流程', path: '/dag', icon: 'Share', color: '#a78bfa' },
 ]
-const powerSteps = [
-  { title: '气象治理', desc: 'ERA5 / ECMWF / GFS', path: '/power', icon: 'Cloudy', color: '#0ea5e9' },
-  { title: '负荷风光电价', desc: '气象驱动预测', path: '/power', icon: 'Lightning', color: '#f59e0b' },
-  { title: 'DAG 编排', desc: '日前闭环可回放', path: '/dag', icon: 'Share', color: '#14b8a6' },
-  { title: '决策报告', desc: '本地 qwen3:4b', path: '/power', icon: 'Notebook', color: '#a78bfa' },
-]
-const steps = computed(() => (isPower.value ? powerSteps : retailSteps))
 
 const trend = computed(() => overview.trend || [])
 const todayCount = computed(() => (trend.value.length ? trend.value[trend.value.length - 1].count : 0))
@@ -206,9 +182,8 @@ function onResize() {
 
 onMounted(async () => {
   try {
-    const [ov, sc] = await Promise.all([getOverview(), fetchScenes()])
+    const ov = await getOverview()
     Object.assign(overview, ov.data || {})
-    scenes.value = sc.data || []
   } finally {
     drawTrend()
   }
@@ -225,56 +200,41 @@ onBeforeUnmount(() => {
 <style scoped>
 .dash { display: block; }
 
-/* —— Hero：气象 + 电力 —— */
 .hero {
   position: relative;
   overflow: hidden;
   border-radius: 16px;
   margin-bottom: 16px;
-  border: 1px solid #0d3b52;
-  box-shadow: 0 16px 44px rgba(6, 24, 40, 0.28);
-  background: #061422;
-}
-
-.hero-bg {
-  position: absolute;
-  inset: -10%;
-  background: url('/hero-power.jpg') center 46% / cover no-repeat;
-  filter: saturate(1.15) contrast(1.1);
-  opacity: 0.5;
+  border: 1px solid #243044;
+  box-shadow: 0 16px 40px rgba(18, 16, 14, 0.22);
+  background:
+    radial-gradient(520px 220px at 12% 0%, rgba(224, 138, 60, 0.28), transparent 70%),
+    radial-gradient(480px 240px at 92% 110%, rgba(56, 189, 248, 0.22), transparent 68%),
+    #1a1d24;
 }
 
 .hero-grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(125, 211, 252, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(125, 211, 252, 0.08) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at 30% 50%, rgba(0, 0, 0, 0.75), transparent 76%);
-}
-
-.hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(760px 320px at 88% 0%, rgba(14, 165, 233, 0.26), transparent 62%),
-    linear-gradient(102deg, rgba(3, 11, 22, 0.95) 0%, rgba(5, 20, 36, 0.86) 48%, rgba(4, 26, 40, 0.72) 100%);
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(ellipse at 25% 40%, rgba(0, 0, 0, 0.7), transparent 78%);
 }
 
 .hero-glow {
   position: absolute;
   border-radius: 50%;
-  filter: blur(48px);
+  filter: blur(42px);
 }
 .hero-glow.g1 {
-  width: 260px; height: 260px; right: 18%; top: -90px;
-  background: rgba(245, 158, 11, 0.24);
+  width: 220px; height: 220px; right: 22%; top: -80px;
+  background: rgba(224, 138, 60, 0.28);
 }
 .hero-glow.g2 {
-  width: 300px; height: 300px; right: 4%; bottom: -140px;
-  background: rgba(20, 184, 166, 0.28);
+  width: 260px; height: 260px; right: 2%; bottom: -120px;
+  background: rgba(56, 189, 248, 0.22);
 }
 
 .hero-inner {
@@ -291,22 +251,20 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #a5f3fc;
-  background: rgba(13, 148, 136, 0.2);
-  border: 1px solid rgba(45, 212, 191, 0.4);
+  color: #ffe7c2;
+  background: rgba(224, 138, 60, 0.16);
+  border: 1px solid rgba(255, 196, 120, 0.35);
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  padding: 5px 12px;
+  letter-spacing: 0.04em;
+  padding: 4px 12px 4px 4px;
   border-radius: 999px;
 }
 
-.pulse {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #34d399;
-  animation: pulse 2.2s ease-out infinite;
+.chip img {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
 }
 
 .hero h1 {
@@ -346,15 +304,15 @@ onBeforeUnmount(() => {
   position: relative;
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgba(9, 26, 44, 0.62);
-  border: 1px solid rgba(125, 211, 252, 0.18);
+  background: rgba(18, 20, 26, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
   border-left: 3px solid var(--c);
 }
 
-.stat span { display: block; font-size: 12px; color: rgba(191, 219, 254, 0.78); }
-.stat b { display: block; font-size: 24px; font-weight: 700; letter-spacing: -0.03em; color: #f0f8ff; margin-top: 4px; }
-.stat i { font-style: normal; font-size: 11px; color: rgba(148, 197, 240, 0.72); }
+.stat span { display: block; font-size: 12px; color: rgba(255, 236, 214, 0.78); }
+.stat b { display: block; font-size: 24px; font-weight: 700; letter-spacing: -0.03em; color: #fffaf3; margin-top: 4px; }
+.stat i { font-style: normal; font-size: 11px; color: rgba(186, 198, 214, 0.78); }
 
 /* —— 卡片区 —— */
 .block { margin-bottom: 16px; }
@@ -414,12 +372,6 @@ onBeforeUnmount(() => {
 
 .step b { font-size: 14px; color: var(--text); }
 .step-desc { color: var(--muted); font-size: 12px; }
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.8); }
-  70% { box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
-}
 
 @media (max-width: 1100px) {
   .hero-inner { grid-template-columns: 1fr; }

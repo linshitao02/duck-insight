@@ -1022,29 +1022,55 @@ def query_ad_hoc(payload):
 def recommend_layout(kind, sid, title=None):
     info = describe_source(kind, sid)
     src = {"kind": kind, "id": int(sid)}
-    measures = [c["name"] for c in info["measures"]][:6]
-    dims = [c["name"] for c in info["dimensions"]]
+    def _is_id_field(name):
+        low = str(name or "").lower()
+        return low in {"id", "order_id", "user_id", "row_id"} or low.endswith("_id")
+
+    def _measure_rank(name):
+        low = str(name or "").lower()
+        if any(key in low for key in ("sales", "amount", "revenue", "gmv", "销售额", "金额")):
+            return 0
+        if any(key in low for key in ("visitor", "qty", "quantity", "客流")):
+            return 1
+        return 2
+
+    def _money_like(name):
+        low = str(name or "").lower()
+        return any(key in low for key in ("sales", "amount", "revenue", "gmv", "销售额", "金额"))
+
+    measures = sorted(
+        [c["name"] for c in info["measures"] if not _is_id_field(c["name"])],
+        key=_measure_rank,
+    )[:6]
+    dims = [c["name"] for c in info["dimensions"] if not _is_id_field(c["name"])]
     derived_time = {"hour", "year", "month", "day", "weekday"}
-    time_dim = next((c["name"] for c in info["dimensions"] if c.get("is_time") and c["name"].lower() not in derived_time), None)
-    cat_dim = next((d for d in dims if d != time_dim and d.lower() not in TIME_HINTS and d.lower() not in derived_time), None)
+    time_dim = next((c["name"] for c in info["dimensions"] if c.get("is_time") and c["name"].lower() not in derived_time and not _is_id_field(c["name"])), None)
+    preferred_dims = [d for d in dims if d != time_dim and any(key in d.lower() for key in ("category", "channel", "city", "store", "品类", "渠道", "城市", "门店"))]
+    other_dims = [d for d in dims if d != time_dim and d.lower() not in TIME_HINTS and d.lower() not in derived_time]
+    cat_dim = (preferred_dims or other_dims or [None])[0]
+    second_dim = next((d for d in preferred_dims if d != cat_dim), None)
     widgets = []
     x = 0
     for m in measures[:4]:
-        widgets.append(_widget("kpi", f"平均{label_zh_for(m) or m}", src, [], [{"field": m, "agg": "avg"}], x, 0, 3, 2))
+        agg = "sum" if _money_like(m) else "avg"
+        title = f"{'合计' if agg == 'sum' else '平均'}{label_zh_for(m) or m}"
+        widgets.append(_widget("kpi", title, src, [], [{"field": m, "agg": agg}], x, 0, 3, 2))
         x += 3
     y = 2
-    if time_dim and measures:
-        widgets.append(_widget("line", "趋势", src, [_dim(time_dim, "year_month_day_hour")],
-                               [{"field": m, "agg": "avg"} for m in measures[:3]], 0, y, 8, 5))
+    primary = measures[0] if measures else None
+    if time_dim and primary:
+        widgets.append(_widget("line", "趋势", src, [_dim(time_dim, "year_month_day")],
+                               [{"field": primary, "agg": "sum" if _money_like(primary) else "avg"}], 0, y, 8, 5))
         if cat_dim:
             widgets.append(_widget("bar", "对比", src, [_dim(cat_dim)],
-                                   [{"field": measures[0], "agg": "avg"}], 8, y, 4, 5))
+                                   [{"field": primary, "agg": "sum" if _money_like(primary) else "avg"}], 8, y, 4, 5))
         y += 5
-    if cat_dim and measures:
+    if cat_dim and primary:
         widgets.append(_widget("pie", f"{label_zh_for(cat_dim) or cat_dim}构成", src,
-                               [_dim(cat_dim)], [{"field": measures[0], "agg": "sum"}], 0, y, 5, 4))
-        widgets.append(_widget("table", "明细", src, [_dim(time_dim, "year_month_day_hour")] if time_dim else [],
-                               [{"field": m, "agg": "avg"} for m in measures[:3]], 5, y, 7, 4))
+                               [_dim(cat_dim)], [{"field": primary, "agg": "sum"}], 0, y, 5, 4))
+        table_dim = second_dim or cat_dim
+        widgets.append(_widget("table", "明细", src, [_dim(table_dim)],
+                               [{"field": m, "agg": "sum" if _money_like(m) else "avg"} for m in measures[:3]], 5, y, 7, 4))
     return {
         "theme": "finebi",
         "grain": "day" if time_dim else None,
@@ -1317,9 +1343,10 @@ def query_board(bid, grain=None, metrics=None, horizons=None):
     if df is None or df.empty:
         return {"board": board, "points": [], "grain": grain, "metrics": metrics, "horizons": horizons}
 
-    if "ts" in df.columns:
-        df["ts"] = _to_datetime(df["ts"])
-        df = df.dropna(subset=["ts"])
+    if "ts" not in df.columns:
+        return {"board": board, "points": [], "grain": grain, "metrics": metrics, "horizons": horizons}
+    df["ts"] = _to_datetime(df["ts"])
+    df = df.dropna(subset=["ts"])
     hz_ok = _expand_horizons(horizons)
     if hz_ok and "horizon" in df.columns:
         df = df[df["horizon"].isin(hz_ok)]
