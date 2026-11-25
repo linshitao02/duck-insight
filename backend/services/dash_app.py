@@ -177,9 +177,12 @@ def build_figure(widget, payload):
                     yaxis=axis,
                 ))
         if horizontal:
-            layout["xaxis"] = dict(title="", automargin=True, gridcolor="#e2e8f0", zeroline=False)
+            layout["xaxis"] = dict(
+                title="", automargin=True, gridcolor="#e2e8f0", zeroline=False,
+                tickangle=0, nticks=5,
+            )
             layout["yaxis"] = dict(title="", automargin=True, autorange="reversed")
-            layout["margin"] = dict(l=8, r=24, t=36, b=28)
+            layout["margin"] = dict(l=8, r=16, t=36, b=40)
             layout["barmode"] = "group"
         else:
             layout["xaxis"] = dict(title=_label(x_field) if x_field else "")
