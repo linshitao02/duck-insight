@@ -69,6 +69,17 @@ def _axis_title(field):
     return label_zh_for(field) or field
 
 
+def _nice_step(raw):
+    if not raw or raw <= 0:
+        return None
+    import math
+    mag = 10 ** math.floor(math.log10(raw))
+    for factor in (1, 2, 2.5, 5, 10):
+        if factor * mag >= raw * 0.75:
+            return factor * mag
+    return 10 * mag
+
+
 def build_figure(widget, payload):
     import plotly.graph_objects as go
 
@@ -177,12 +188,19 @@ def build_figure(widget, payload):
                     yaxis=axis,
                 ))
         if horizontal:
+            xmax = 0
+            for tr in fig.data:
+                for val in (tr.x or []):
+                    if isinstance(val, (int, float)) and val > xmax:
+                        xmax = val
+            step = _nice_step(xmax / 2) if xmax else None
             layout["xaxis"] = dict(
                 title="", automargin=True, gridcolor="#e2e8f0", zeroline=False,
-                tickangle=0, nticks=5,
+                tickangle=0, tick0=0, dtick=step, tickformat=".2s",
+                range=[0, xmax * 1.08] if xmax else None,
             )
             layout["yaxis"] = dict(title="", automargin=True, autorange="reversed")
-            layout["margin"] = dict(l=8, r=16, t=36, b=40)
+            layout["margin"] = dict(l=8, r=16, t=36, b=36)
             layout["barmode"] = "group"
         else:
             layout["xaxis"] = dict(title=_label(x_field) if x_field else "")
