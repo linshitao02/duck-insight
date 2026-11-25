@@ -1,0 +1,9 @@
+极端天气 × 负荷 / 风光出力 数据集说明
+====================================
+时间范围: 2023-01-01 ~ 2024-12-31 逐小时，3 个华东站点，共 52632 行。
+气象: Open-Meteo Archive ERA5（temperature_2m, wind, radiation, precipitation）。
+      若接口失败则回退为气候态合成，见 SOURCES.json 的 weather_source。
+负荷 load_mw: 由小时/工作日曲线 + HDD/CDD + 极端事件冲击生成（MW）。
+风光 renewable_mw = wind_mw + solar_mw，风机功率曲线含台风切出，光伏含辐照/温度/云遮。
+事件标记: 寒潮 / 热浪 / 台风 / 强对流，阈值基于日最高/最低温、24h 降温、阵风与强降水。
+两个监督标签互相独立，训练时应分别作为 target，不要把另一个标签当特征。

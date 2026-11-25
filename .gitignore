@@ -1,0 +1,14 @@
+storage/**
+!storage/.gitkeep
+backend/db.local.json
+backend/catboost_info/
+**/__pycache__/
+.idea/
+frontend/node_modules/
+frontend/dist/
+backend/knowledge_docs/.faiss_index/
+document/weather/
+document/_crawler/*.html
+document/_crawler/manifest_weather.csv
+backend/knowledge_docs/001_*.md
+backend/knowledge_docs/012_*.md

@@ -1,0 +1,26 @@
+{
+  "rows": 52632,
+  "sites": [
+    "SH",
+    "JS",
+    "XZ"
+  ],
+  "start": "2023-01-01",
+  "end": "2024-12-31",
+  "weather_source": [
+    "ERA5 SH",
+    "ERA5 JS",
+    "ERA5 XZ"
+  ],
+  "event_hours": {
+    "寒潮": 4968,
+    "热浪": 1896,
+    "台风": 408,
+    "强对流": 1032
+  },
+  "event_episodes": 118,
+  "labels": [
+    "load_mw",
+    "renewable_mw"
+  ]
+}

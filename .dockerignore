@@ -1,0 +1,16 @@
+.git
+**/.git
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+frontend/node_modules
+frontend/dist
+storage
+backend/catboost_info
+backend/db.local.json
+backend/knowledge_docs/.faiss_index
+**/.idea
+**/.vscode
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
