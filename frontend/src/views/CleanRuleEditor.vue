@@ -4,7 +4,7 @@
       <el-button v-if="fromDag" link type="primary" @click="backToDag">← 返回 DAG 编排</el-button>
       <el-button v-else link type="primary" @click="$router.push('/clean')">← 返回规则库</el-button>
       <h2>{{ isNew ? '新建清洗规则' : '编辑清洗规则' }}</h2>
-      <p>点击左侧组件后会跟着鼠标，再在画布上点一下放下。从节点右侧圆点拉线到下一节点左侧圆点。空白处按住可拖动画布，滚轮缩放。</p>
+      <p>点击左侧组件，再在画布上点一下放下。新节点会自动接到上一个节点。要改顺序，按住右侧圆点拖到下一节点左侧圆点，双击连线可删除。空白处按住可拖动画布，滚轮缩放。</p>
       <el-input v-model="form.name" placeholder="规则名称" style="margin-top: 8px" />
       <el-input v-model="form.description" type="textarea" :rows="2" placeholder="说明（可选）" style="margin-top: 8px" />
 
