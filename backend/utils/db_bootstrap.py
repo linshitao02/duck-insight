@@ -220,6 +220,16 @@ def ensure_schema_updates():
         conn.close()
 
 
+def _linear_clean_rule(steps):
+    tagged = []
+    for i, step in enumerate(steps, 1):
+        item = dict(step)
+        item["id"] = f"s{i}"
+        tagged.append(item)
+    edges = [{"from": f"s{i}", "to": f"s{i + 1}"} for i in range(1, len(tagged))]
+    return json.dumps({"steps": tagged, "edges": edges, "source": {}}, ensure_ascii=False)
+
+
 def seed_defaults():
     from config import DEFAULT_SYSTEM_PROMPT
     from utils.db import query, insert, execute, update
@@ -281,7 +291,7 @@ def seed_defaults():
             "name": "Rossmann销量清洗模板",
             "scenario_code": "store_sales",
             "description": "过滤零销量、拆解日期与促销月份、自动填补缺失、类别编码与标准化。",
-            "steps_json": json.dumps([
+            "steps_json": _linear_clean_rule([
                 {"op": "filter", "column": "Sales", "operator": ">", "value": 0, "skip_if_missing": True},
                 {"op": "parse_date", "column": "Date", "extract": ["year", "month", "day", "weekday"], "skip_if_missing": True},
                 {"op": "split_flags", "column": "PromoInterval", "tokens": [
@@ -291,7 +301,7 @@ def seed_defaults():
                 {"op": "fill_missing", "strategy": "auto"},
                 {"op": "label_encode", "columns": "auto_categorical"},
                 {"op": "scale", "method": "standard", "columns": "auto_numeric"},
-            ], ensure_ascii=False),
+            ]),
             "is_preset": 1,
             "username": "system",
             "status": 1,
@@ -300,11 +310,11 @@ def seed_defaults():
             "name": "通用快速清洗",
             "scenario_code": "generic",
             "description": "去重、自动填补缺失、类别编码。适合快速试用。",
-            "steps_json": json.dumps([
+            "steps_json": _linear_clean_rule([
                 {"op": "drop_duplicates"},
                 {"op": "fill_missing", "strategy": "auto"},
                 {"op": "label_encode", "columns": "auto_categorical"},
-            ], ensure_ascii=False),
+            ]),
             "is_preset": 1,
             "username": "system",
             "status": 1,

@@ -60,17 +60,27 @@
       <svg class="wires" :width="canvas.w" :height="canvas.h">
         <defs>
           <marker id="clean-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8" />
+            <path d="M0,0 L0,6 L8,3 z" fill="#64748b" />
           </marker>
         </defs>
+        <path
+          v-for="(e, i) in edges"
+          :key="'halo-' + i"
+          :d="edgePath(e)"
+          fill="none"
+          stroke="#ffffff"
+          stroke-width="6"
+          stroke-linecap="round"
+        />
         <path
           v-for="(e, i) in edges"
           :key="i"
           class="wire"
           :d="edgePath(e)"
           fill="none"
-          stroke="#94a3b8"
+          stroke="#64748b"
           stroke-width="2.5"
+          stroke-linecap="round"
           marker-end="url(#clean-arrow)"
           @dblclick.stop="removeEdge(i)"
         />
@@ -94,11 +104,11 @@
           <b>{{ metaOf(n.op)?.label || n.op }}</b>
           <em>{{ summarize(n) }}</em>
         </div>
-        <span class="port out" role="button" :aria-label="'从 ' + (metaOf(n.op)?.label || n.op) + ' 拉线'" title="按住拖到下一节点左侧圆点" @mousedown.stop="startLink(n, $event)" />
+        <span class="port out" role="button" :aria-label="'从 ' + (metaOf(n.op)?.label || n.op) + ' 拉线'" title="按住拖到下一节点左侧圆点" @pointerdown.stop.prevent="startLink(n, $event)" />
       </div>
         </div>
       </div>
-      <div v-if="!nodes.length && !placing" class="empty-hint">点击左侧组件，再在画布上点一下放下，然后从右端口拉线连接</div>
+      <div v-if="!nodes.length && !placing" class="empty-hint">点击左侧组件，再在画布上点一下放下。新节点会自动接到上一个节点；要改顺序，按住右侧圆点拖到下一节点左侧圆点</div>
     </div>
     <button type="button" class="zoom-badge" title="点击恢复 100%" @click="resetZoom">{{ zoomPct }}%</button>
 
@@ -479,11 +489,25 @@ const liveOverrides = computed(() => {
   return (n.overrides || []).filter(r => r.column && live.has(r.column))
 })
 
+function chainSteps(list) {
+  const out = []
+  for (let i = 1; i < (list || []).length; i++) {
+    if (!list[i - 1]?.id || !list[i]?.id) continue
+    out.push({ from: list[i - 1].id, to: list[i].id })
+  }
+  return out
+}
+function connectTail(node) {
+  const tails = nodes.value.filter(n => n.id !== node.id && !edges.value.some(e => e.from === n.id))
+  if (tails.length !== 1 || wouldCycle(tails[0].id, node.id)) return
+  edges.value.push({ from: tails[0].id, to: node.id })
+}
 function nodeById(id) {
   return nodes.value.find(n => n.id === id)
 }
 function portPos(n, side) {
-  return { x: n.x + (side === 'out' ? NODE_W : 0), y: n.y + NODE_H / 2 }
+  if (side === 'out') return { x: n.x + NODE_W + 1, y: n.y + NODE_H / 2 }
+  return { x: n.x - 1, y: n.y + NODE_H / 2 }
 }
 function bezier(a, b) {
   const dx = Math.max(40, (b.x - a.x) / 2)
@@ -665,8 +689,19 @@ function makeStep(op) {
 }
 
 function layoutFromSteps(steps) {
+  const used = new Set((steps || []).map(s => s.id).filter(Boolean))
   return (steps || []).map((s, i) => {
-    const node = { ...s, id: s.id || ('s' + i + Date.now().toString(36)), x: 70 + i * 230, y: 190 }
+    let id = s.id
+    if (!id) {
+      let n = i + 1
+      id = 's' + n
+      while (used.has(id)) {
+        n += 1
+        id = 's' + n
+      }
+      used.add(id)
+    }
+    const node = { ...s, id, x: 48 + i * 280, y: 168 }
     if ((s.op === 'label_encode' || s.op === 'scale') && s.auto_mode == null) {
       node.auto_mode = !s.columns || !s.columns.length || s.columns === 'auto_categorical' || s.columns === 'auto_numeric'
     }
@@ -852,6 +887,7 @@ function dropOp(ev) {
   node.x = Math.max(16, pt.x - NODE_W / 2)
   node.y = Math.max(16, pt.y - NODE_H / 2)
   nodes.value.push(node)
+  connectTail(node)
   placing.value = null
   openNode(node.id)
   return true
@@ -909,36 +945,55 @@ function startMove(n, ev) {
   window.addEventListener('mouseup', up)
 }
 
+function nodeAtPoint(clientX, clientY, fromId) {
+  const el = typeof document.elementFromPoint === 'function' ? document.elementFromPoint(clientX, clientY) : null
+  const direct = el?.closest?.('.node')?.getAttribute('data-id')
+  if (direct && direct !== fromId) return nodeById(direct)
+  const pt = stagePoint({ clientX, clientY })
+  let best = null
+  let bestD = 42
+  for (const node of nodes.value) {
+    if (!node || node.id === fromId) continue
+    const port = portPos(node, 'in')
+    const d = Math.hypot(pt.x - port.x, pt.y - port.y)
+    if (d < bestD) {
+      bestD = d
+      best = node
+    }
+  }
+  return best
+}
+
 function startLink(n, ev) {
   ev.preventDefault()
   ev.stopPropagation()
-  if (ev.button !== 0) return
+  if (ev.button != null && ev.button !== 0) return
   const p = portPos(n, 'out')
   linking.from = n.id
   linking.x = p.x
   linking.y = p.y
-  const stage = stageRef.value || ev.currentTarget.closest('.stage')
+  const stage = stageRef.value || ev.currentTarget?.closest?.('.stage')
+  const handle = ev.currentTarget
+  try { handle?.setPointerCapture?.(ev.pointerId) } catch { /* 旧浏览器没有指针捕获 */ }
   const move = (e) => {
     const pt = stagePoint(e, stage)
-    draft.value = bezier(
-      { x: linking.x, y: linking.y },
-      { x: pt.x, y: pt.y }
-    )
+    draft.value = bezier({ x: linking.x, y: linking.y }, { x: pt.x, y: pt.y })
   }
   const up = (e) => {
-    window.removeEventListener('mousemove', move)
-    window.removeEventListener('mouseup', up)
-    const el = (typeof document.elementFromPoint === 'function'
-      ? document.elementFromPoint(e.clientX, e.clientY)
-      : null) || e.target
-    const nodeEl = el?.closest?.('.node')
-    const toId = nodeEl?.getAttribute('data-id')
-    if (toId) endLink(nodeById(toId))
-    draft.value = ''
-    linking.from = null
+    window.removeEventListener('pointermove', move)
+    window.removeEventListener('pointerup', up)
+    window.removeEventListener('pointercancel', up)
+    try { handle?.releasePointerCapture?.(e.pointerId) } catch { /* 捕获已经释放 */ }
+    const target = nodeAtPoint(e.clientX, e.clientY, n.id)
+    if (target) endLink(target)
+    else {
+      draft.value = ''
+      linking.from = null
+    }
   }
-  window.addEventListener('mousemove', move)
-  window.addEventListener('mouseup', up)
+  window.addEventListener('pointermove', move)
+  window.addEventListener('pointerup', up)
+  window.addEventListener('pointercancel', up)
 }
 
 function endLink(n) {
@@ -1318,7 +1373,8 @@ const boot = async () => {
       form.description = rule.description || ''
       const merged = mergeSequentialClips(rule.steps || [], Array.isArray(rule.edges) ? rule.edges : [])
       nodes.value = layoutFromSteps(merged.steps)
-      edges.value = sanitizeEdges(merged.edges)
+      const loadedEdges = sanitizeEdges(merged.edges)
+      edges.value = loadedEdges.length ? loadedEdges : sanitizeEdges(chainSteps(nodes.value))
       const src = rule.source || {}
       if (src.project_id) ctx.projectId = Number(src.project_id)
       if (src.target_type) ctx.targetType = src.target_type
