@@ -74,12 +74,16 @@ const activeMenu = computed(() => {
   if (p.startsWith('/clean')) return '/clean'
   if (p.startsWith('/datasource')) return '/datasource'
   if (p.startsWith('/dataset')) return '/dataset'
+  if (p.startsWith('/realtime/tasks')) return '/realtime/tasks'
+  if (p.startsWith('/realtime/ops')) return '/realtime/ops'
+  if (p.startsWith('/realtime/topics')) return '/realtime/topics'
+  if (p.startsWith('/realtime/doris')) return '/realtime/doris'
   if (p.startsWith('/dag')) return '/dag'
   if (p.startsWith('/bi')) return '/bi'
   return p
 })
 
-const GROUP_ORDER = ['决策运营', '数据资产', '模型实验', '智能体', '系统']
+const GROUP_ORDER = ['决策运营', '数据资产', '实时同步', '模型实验', '智能体', '系统']
 
 const menus = computed(() => {
   const root = router.getRoutes().find(r => r.path === '/')

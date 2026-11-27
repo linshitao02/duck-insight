@@ -13,6 +13,16 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-insight_forge}
       MYSQL_USER: ${MYSQL_USER:-root}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+      FLINK_REST_URL: ${FLINK_REST_URL:-http://jobmanager:8081}
+      FLINK_SQL_CLIENT_CMD: ${FLINK_SQL_CLIENT_CMD:-}
+      KAFKA_BOOTSTRAP: ${KAFKA_BOOTSTRAP:-kafka:9092}
+      KAFKA_ADMIN_BOOTSTRAP: ${KAFKA_ADMIN_BOOTSTRAP:-kafka:9092}
+      DORIS_HOST: ${DORIS_HOST:-doris-fe}
+      DORIS_PORT: ${DORIS_PORT:-9030}
+      DORIS_USER: ${DORIS_USER:-root}
+      DORIS_PASSWORD: ${DORIS_PASSWORD:-}
+      DORIS_DATABASE: ${DORIS_DATABASE:-dw_ecommerce}
+      DORIS_KAFKA_BROKERS: ${DORIS_KAFKA_BROKERS:-kafka:9092}
       TZ: Asia/Shanghai
     volumes:
       - duck-insight-data:/app/storage

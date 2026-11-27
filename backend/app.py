@@ -40,6 +40,8 @@ def create_app():
     from api.predict_api import predict_bp
     from api.project_api import project_bp
     from api.bi_api import bi_bp
+    from api.realtime_api import realtime_bp
+    from api.doris_api import doris_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(project_bp)
@@ -54,6 +56,8 @@ def create_app():
     app.register_blueprint(power_bp)
     app.register_blueprint(bi_bp)
     app.register_blueprint(chat_bp)
+    app.register_blueprint(realtime_bp)
+    app.register_blueprint(doris_bp)
     try:
         from services.dash_app import attach_dash
         attach_dash(app)

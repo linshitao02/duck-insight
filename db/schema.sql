@@ -444,3 +444,46 @@ CREATE TABLE IF NOT EXISTS `chat_memory` (
   KEY `idx_session` (`session_id`),
   KEY `idx_kind` (`kind`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `realtime_sync_task` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) NOT NULL,
+  `description` varchar(512) DEFAULT NULL,
+  `mode` varchar(16) DEFAULT 'wizard' COMMENT 'wizard=向导模式 script=脚本模式',
+  `source_id` int DEFAULT NULL COMMENT '关联 data_source.id',
+  `database_name` varchar(128) DEFAULT NULL,
+  `topic_prefix` varchar(64) DEFAULT 'cdc',
+  `tables_json` longtext COMMENT '多表与主题映射 JSON',
+  `channel_json` text COMMENT '通道控制参数 JSON',
+  `generated_sql` longtext COMMENT '向导生成的 Flink SQL（脱敏）',
+  `script_sql` longtext COMMENT '脚本模式用户编辑的 Flink SQL',
+  `flink_job_id` varchar(128) DEFAULT NULL,
+  `job_status` varchar(32) DEFAULT 'draft' COMMENT 'draft/running/stopped/failed',
+  `last_checkpoint` varchar(512) DEFAULT NULL,
+  `last_error` text,
+  `user_id` int DEFAULT NULL,
+  `username` varchar(64) DEFAULT NULL,
+  `status` tinyint DEFAULT 1,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_source` (`source_id`),
+  KEY `idx_job_status` (`job_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `realtime_kafka_topic` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(128) NOT NULL,
+  `partitions` int DEFAULT 1,
+  `replication_factor` int DEFAULT 1,
+  `retention_ms` bigint DEFAULT 604800000,
+  `source_task_id` int DEFAULT NULL,
+  `remark` varchar(512) DEFAULT NULL,
+  `user_id` int DEFAULT NULL,
+  `username` varchar(64) DEFAULT NULL,
+  `status` tinyint DEFAULT 1,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_topic_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

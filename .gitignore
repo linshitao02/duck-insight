@@ -12,3 +12,10 @@ document/_crawler/*.html
 document/_crawler/manifest_weather.csv
 backend/knowledge_docs/001_*.md
 backend/knowledge_docs/012_*.md
+docker/.env.realtime
+# 对照参考代码，不随本仓库分发（SQLBot 为 GPL 类许可，只读对照，不复制实现）
+SQLBot/
+Taier/
+docker/realtime/lib/*.jar
+docker/realtime/state/
+docker/realtime/sql/*.sql

@@ -185,3 +185,35 @@ export const deleteBoard = (id) => request({ url: `/bi/${id}`, method: 'delete' 
 export const queryBoardLayout = (id, data) => request({ url: `/bi/${id}/query`, method: 'post', data })
 export const queryBiWidget = (data) => request({ url: '/bi/query', method: 'post', data })
 export const recommendBoard = (data) => request({ url: '/bi/recommend', method: 'post', data })
+
+export const getRealtimeOverview = () => request({ url: '/realtime/overview' })
+export const listRealtimeOpsTasks = (sync = false) => request({ url: '/realtime/ops/tasks', params: sync ? { sync: 1 } : {} })
+export const listRealtimeTasks = () => request({ url: '/realtime/tasks' })
+export const getRealtimeTask = (id) => request({ url: `/realtime/tasks/${id}` })
+export const getRealtimeTaskRuntime = (id) => request({ url: `/realtime/tasks/${id}/runtime` })
+export const saveRealtimeTask = (data, id) => id
+  ? request({ url: `/realtime/tasks/${id}`, method: 'put', data })
+  : request({ url: '/realtime/tasks', method: 'post', data })
+export const deleteRealtimeTask = (id) => request({ url: `/realtime/tasks/${id}`, method: 'delete' })
+export const previewRealtimeSql = (data) => request({ url: '/realtime/tasks/preview-sql', method: 'post', data })
+export const convertRealtimeScript = (id) => request({ url: `/realtime/tasks/${id}/convert-script`, method: 'post' })
+export const submitRealtimeTask = (id, resume = true, checkpointPath = '') => request({
+  url: `/realtime/tasks/${id}/submit`,
+  method: 'post',
+  data: { resume, ...(checkpointPath ? { checkpoint_path: checkpointPath } : {}) }
+})
+export const stopRealtimeTask = (id) => request({ url: `/realtime/tasks/${id}/stop`, method: 'post' })
+export const refreshRealtimeTask = (id) => request({ url: `/realtime/tasks/${id}/refresh`, method: 'post' })
+export const fetchRealtimeSourceSchema = (sid, data) => request({ url: `/realtime/source/${sid}/schema`, method: 'post', data })
+export const listKafkaTopics = () => request({ url: '/realtime/topics' })
+export const createKafkaTopic = (data) => request({ url: '/realtime/topics', method: 'post', data })
+export const deleteKafkaTopic = (name) => request({ url: `/realtime/topics/${encodeURIComponent(name)}`, method: 'delete' })
+
+// Doris 实时入库（Routine Load / DWD 实时表 / SQL 控制台）
+export const getDorisOverview = () => request({ url: '/doris/overview' })
+export const listDorisTables = () => request({ url: '/doris/tables' })
+export const previewDorisTable = (table, limit = 20) => request({ url: `/doris/tables/${encodeURIComponent(table)}/preview`, params: { limit } })
+export const listDorisRoutineLoads = () => request({ url: '/doris/routine-loads' })
+export const createDorisRoutineLoad = (data) => request({ url: '/doris/routine-loads', method: 'post', data })
+export const controlDorisRoutineLoad = (jobName, action) => request({ url: `/doris/routine-loads/${encodeURIComponent(jobName)}/${action}`, method: 'post' })
+export const executeDorisSql = (sql) => request({ url: '/doris/sql/execute', method: 'post', data: { sql } })
